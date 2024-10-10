@@ -27,6 +27,9 @@ There are several imput parameters. These parameters are optional, you can find 
 python simulation.py -h
 ```
 
+## Project status
+In this version of the code, we have implemented a grid representing a forest. Trees can be placed in this forest using different distributions. We have also implemented a starting point for the fire, this point is chosen randomly from all cells representing a tree. Our next step will be adding the spreading of fire to neighbouring trees. After that, we will focus on simulating the wind direction.
+
 ## Acknowledgements
 
 - Inspired by the forest fire model code from https://gitlab.com/stunderline/forestfire/tree/master. 
