@@ -12,7 +12,7 @@ This project simulates the spread of a forest fire using a simple model. The sim
 Requirements can be found in requirements.txt. You can install them by running:
 
 ```sh
-pip install requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Usage
