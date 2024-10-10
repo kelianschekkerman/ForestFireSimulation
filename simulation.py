@@ -52,6 +52,34 @@ def random_arson(grid):
     # set the value of the random point to 2 in the grid
     grid[random_point[0], random_point[1]] = 2
 
+# find the neighbours of a point in the grid that are trees
+def find_neighbours(grid, starting_point):
+    neighbours = []
+    # check if the point above is a tree
+    if grid[starting_point[0], starting_point[1] + 1] == 1:
+        neighbours.append(grid[starting_point[0], starting_point[1] + 1])
+    # check if the point above right is a tree
+    if grid[starting_point[0] + 1, starting_point[1] + 1] == 1:
+        neighbours.append(grid[starting_point[0] + 1, starting_point[1] + 1])
+    # check if the point right is a tree
+    if grid[starting_point[0] + 1, starting_point[1]] == 1:
+        neighbours.append(grid[starting_point[0] + 1, starting_point[1]])
+    # check if the point below right is a tree
+    if grid[starting_point[0] + 1, starting_point[1] - 1] == 1:
+        neighbours.append(grid[starting_point[0] + 1, starting_point[1] - 1])
+    # check if the point below is a tree
+    if grid[starting_point[0], starting_point[1] - 1] == 1:
+        neighbours.append(grid[starting_point[0], starting_point[1] - 1])
+    # check if the point below left is a tree
+    if grid[starting_point[0] - 1, starting_point[1] - 1] == 1:
+        neighbours.append(grid[starting_point[0] - 1, starting_point[1] - 1])
+    # check if the point left is a tree
+    if grid[starting_point[0] - 1, starting_point[1]] == 1:
+        neighbours.append(grid[starting_point[0] - 1, starting_point[1]])
+    # check if the point above left is a tree
+    if grid[starting_point[0] - 1, starting_point[1] + 1] == 1:
+        neighbours.append(grid[starting_point[0] - 1, starting_point[1] + 1])
+    return neighbours   
 
 if __name__ == "__main__":
     args = create_arg_parser()
