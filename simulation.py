@@ -36,15 +36,26 @@ def init_square_lattice(n, p, type):
 
 def show_grid(grid, title="Forest fire"):
     plt.figure(figsize=(6, 6))
-    cmap = ListedColormap(['w', 'g', 'r', 'k'])
+    cmap = ListedColormap(['w', 'g', 'r'])
     plt.imshow(grid, cmap=cmap, interpolation='none')
     plt.title(title)
     plt.axis('off')
     plt.show()
+
+def random_arson(grid):
+    # get the indices of all the points where the value is 1
+    indices = np.argwhere(grid == 1)
+    # pick a random index
+    random_index = np.random.choice(indices.shape[0])
+    # get the random point
+    random_point = indices[random_index]
+    # set the value of the random point to 2 in the grid
+    grid[random_point[0], random_point[1]] = 2
 
 
 if __name__ == "__main__":
     args = create_arg_parser()
     # Create a square lattice of size n x n with tree density p
     lattice = init_square_lattice(args.size, args.treeprobability, args.distribution)
+    random_arson(lattice)
     show_grid(lattice)
