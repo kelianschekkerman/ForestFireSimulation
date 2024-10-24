@@ -6,6 +6,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 import matplotlib.animation as animation
 
 # Take the arguments from the command line and return them
+# TODO: add a catch for invalid arguments
 def create_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--distribution", default='random', type=str,
@@ -16,6 +17,10 @@ def create_arg_parser():
                         help="Probability of trees catching fire.")
     parser.add_argument("-s", "--size", default=100, type=int,
                         help="The size of the square lattice.")
+    parser.add_argument("-w", "--windspeed", default=100, type=int,
+                    help="The speed of the wind.")
+    parser.add_argument("-wd", "--winddirection", default=None, type=str,
+                        help="Direction of the wind. Options are: N, S, E, W, NE, NW, SE, SW. If not specified, there is no wind.")
     args = parser.parse_args() 
     return args
 
@@ -115,16 +120,14 @@ if __name__ == "__main__":
     args = create_arg_parser()
 
     # Create a square lattice of size n x n with tree density p
-    grid = init_square_lattice(args.size, args.treeprobability, args.distribution)
-    images.append(return_image(grid, 0))
+    grid = init_square_lattice(args.size, args.treeprobability, args.distribution, args.windspeed, args.winddirection)
+    images.append(return_image(grid))
     random_arson(grid)
-    images.append(return_image(grid, 1))
-    nstep = 1
+    images.append(return_image(grid))
 
     # TODO: the simulation is not working properly and stops early
     while step(grid):
-        nstep += 1
-        images.append(return_image(grid, nstep))
+        images.append(return_image(grid))
     ani = animation.ArtistAnimation(fig, images, interval=100, blit=True, repeat_delay=10000)
 
     # TODO: the gif is not saved properly
