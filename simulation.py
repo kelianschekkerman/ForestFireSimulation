@@ -14,38 +14,47 @@ def create_arg_parser():
                         help="Distribution of tree placement. Options are: random, semi-random, ordered")
     parser.add_argument("-t", "--treeprobability", default=0.6, type=float,
                         help="Probability of a tree being placed.")
-    parser.add_argument("-f", "--fireprobability", default=0.6, type=float,
-                        help="Probability of trees catching fire.")
     parser.add_argument("-s", "--size", default=100, type=int,
                         help="The size of the square lattice.")
-    parser.add_argument("-w", "--windspeed", default=100, type=int,
+    parser.add_argument("-ws", "--windspeed", default=100, type=int,
                     help="The speed of the wind.")
     parser.add_argument("-wd", "--winddirection", default=None, type=str,
                         help="Direction of the wind. Options are: N, S, E, W, NE, NW, SE, SW. If not specified, there is no wind.")
+    parser.add_argument("-w", "--weather", default='normal', type=str,
+                help="The weather conditions. Options are: dry, normal, wet.")
     args = parser.parse_args() 
     return args
 
 # Return the probabilities of neigbours catching fire based on the wind direction and wind speed
 # TODO: add a formula for the probabilities based on the wind speed and direction
-def get_wind_probabilities(wind_speed, wind_direction):
+def get_wind_probabilities(wind_speed, wind_direction, weather):   
     if wind_direction == None:
-        return [0.25, 0.25, 0.25, 0.25] # f.l.t.r. top, right, bottom, left
+        probabilties = [1, 1, 1, 1] # f.l.t.r. top, right, bottom, left
+        return [x * weather for x in probabilties]
     elif wind_direction == 'N':
-        return [0.5, 0.7, 1, 0.7]
+        probabilties = [0.25, 0.7, 1, 0.7]
+        return [x * weather for x in probabilties]
     elif wind_direction == 'S':
-        return [0.3, 0.3, 0.3, 0.1]
+        probabilties = [1, 0.7, 0.25, 0.7]
+        return [x * weather for x in probabilties]
     elif wind_direction == 'E':
-        return [0.3, 0.1, 0.3, 0.3]
+        probabilties = [0.7, 0.25, 0.7, 1]
+        return [x * weather for x in probabilties]
     elif wind_direction == 'W':
-        return [0.3, 0.3, 0.1, 0.3]
+        probabilties = [0.7, 1, 0.7, 0.25]
+        return [x * weather for x in probabilties]
     elif wind_direction == 'NE':
-        return [0.1, 0.1, 0.3, 0.5]
+        probabilties = [0.1, 0.1, 0.3, 0.5]
+        return [x * weather for x in probabilties]
     elif wind_direction == 'NW':
-        return [0.1, 0.5, 0.3, 0.1]
+        probabilties = [0.1, 0.5, 0.3, 0.1]
+        return [x * weather for x in probabilties]
     elif wind_direction == 'SE':
-        return [0.5, 0.1, 0.1, 0.3]
+        probabilties = [0.5, 0.1, 0.1, 0.3]
+        return [x * weather for x in probabilties]
     elif wind_direction == 'SW':
-        return [0.3, 0.1, 0.5, 0.1]
+        probabilties = [0.3, 0.1, 0.5, 0.1]
+        return [x * weather for x in probabilties]
 
 # Initialize the square lattice with trees based on the distribution type
 def init_square_lattice(n, p, type):
@@ -142,23 +151,39 @@ def is_spanning(lattice):
     
 
 if __name__ == "__main__":
+    args = create_arg_parser()
+
+    if args.weather == 'dry':
+        weather = 1.5
+    elif args.weather == 'normal':
+        weather = 1
+    elif args.weather == 'wet':
+        weather = 0.5
+
+    burnt_percentage = []
+
+    # TODO: Add a loop for multiple iterations to normalise the results
     images = []
     fig = plt.figure(figsize=(6, 6))
-    args = create_arg_parser()
 
     # Create a square lattice of size n x n with tree density p
     grid = init_square_lattice(args.size, args.treeprobability, args.distribution)
+
     images.append(return_image(grid))
     random_arson(grid)
     images.append(return_image(grid))
 
-    # Get the probabilities of the neighbours catching fire based on the wind direction and speed
-    wind_probabilities = get_wind_probabilities(args.windspeed, args.winddirection)
+    # Get the probabilities of the neighbours catching fire based on the wind direction, wind speed and weather
+    wind_probabilities = get_wind_probabilities(args.windspeed, args.winddirection, weather)
 
     # Run the simulation and save the images for the animation
     while step(grid, wind_probabilities):
         images.append(return_image(grid))
     ani = animation.ArtistAnimation(fig, images, interval=100, blit=True, repeat_delay=10000)
-    ani.save(f'n={args.size}_p={int(100*args.treeprobability)}%_{args.distribution}.gif', dpi=80, writer='pillow') 
+    ani.save(f'gifs\{args.size}_{args.treeprobability}_{args.distribution}_{args.windspeed}_{args.winddirection}_{args.weather}.gif', dpi=80, writer='pillow') 
 
-    plt.show()
+    # plt.show() # Uncomment to show the animation
+    # TODO: calculate the percentage of trees burned down from the total number of trees
+    amount_of_trees = len(np.argwhere(grid == 1))
+    amount_of_trees_burnt = len(np.argwhere(grid == 3))
+    print(amount_of_trees, amount_of_trees_burnt)
