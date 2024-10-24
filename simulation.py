@@ -5,6 +5,7 @@ import random
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import matplotlib.animation as animation
+from tqdm import tqdm
 
 # Take the arguments from the command line and return them
 # TODO: add a catch for invalid arguments
@@ -175,7 +176,6 @@ def step(lattice, wind_probabilities):
     
 # Return if the perculation hit one of the sides of the square lattice
 def is_percolating(lattice):
-    n = lattice.shape[0]
     if np.any(lattice[0, :] == 3) or np.any(lattice[:, 0] == 3) or np.any(lattice[-1, :] == 3) or np.any(lattice[:, -1] == 3):
         return True
     else:
@@ -197,36 +197,49 @@ if __name__ == "__main__":
 
     burnt_percentage = []
     percolating_percentage = []
+    percolating_amount = 0
+    treeprobability = 0.01
 
-    # TODO: Add a loop for multiple iterations to normalise the results
-    for i in range(10):
-        images = []
-        fig = plt.figure(figsize=(6, 6))
-        percolating = False
+    for i in tqdm(range(99)):
+        for j in range(10):
+            images = []
+            # fig = plt.figure(figsize=(6, 6))
+            percolating = False
 
-        # Create a square lattice of size n x n with tree density p
-        grid = init_square_lattice(args.size, args.treeprobability, args.distribution)
+            # Create a square lattice of size n x n with tree density p
+            grid = init_square_lattice(args.size, treeprobability, args.distribution)
 
-        amount_of_trees = len(np.argwhere(grid == 1))
+            amount_of_trees = len(np.argwhere(grid == 1))
 
-        images.append(return_image(grid))
-        random_arson(grid, args.center)
-        images.append(return_image(grid))
-        
+            # images.append(return_image(grid))
+            random_arson(grid, args.center)
+            # images.append(return_image(grid))
+            
 
-        # Run the simulation and save the images for the animation
-        while step(grid, wind_probabilities):
-            images.append(return_image(grid))
-        ani = animation.ArtistAnimation(fig, images, interval=100, blit=True, repeat_delay=10000)
-        ani.save(f'gifs\{args.size}_{args.treeprobability}_{args.distribution}_{args.windspeed}_{args.winddirection}_{args.weather}_{args.center}_{i}.gif', dpi=80, writer='pillow') 
+            # Run the simulation and save the images for the animation
+            while step(grid, wind_probabilities):
+                pass
+                # images.append(return_image(grid))
+            # ani = animation.ArtistAnimation(fig, images, interval=100, blit=True, repeat_delay=10000)
+            # ani.save(f'gifs\{args.size}_{args.treeprobability}_{args.distribution}_{args.windspeed}_{args.winddirection}_{args.weather}_{args.center}_{i}.gif', dpi=80, writer='pillow') 
 
-        # plt.show() # Uncomment to show the animation
-        amount_of_trees_burnt = len(np.argwhere(grid == 3)) + len(np.argwhere(grid == 2))
-        # print(amount_of_trees, amount_of_trees_burnt)
+            # plt.show() # Uncomment to show the animation
+            # amount_of_trees_burnt = len(np.argwhere(grid == 3)) + len(np.argwhere(grid == 2))
+            # print(amount_of_trees, amount_of_trees_burnt)
 
-        burnt_percentage.append(amount_of_trees_burnt / amount_of_trees)
-        percolating = is_percolating(grid)
-        percolating_percentage.append(percolating)
+            # burnt_percentage.append(amount_of_trees_burnt / amount_of_trees)
+            percolating = is_percolating(grid)
+            percolating_amount += 1 if percolating else 0
 
-    print(burnt_percentage)
-    print(percolating_percentage)
+        percolating_percentage.append(percolating_amount / 10)
+        percolating_amount = 0
+        treeprobability += 0.01
+    
+    x_values = [i / 99 for i in range(len(percolating_percentage))]
+    y_values = percolating_percentage
+
+    plt.scatter(x_values, y_values)
+    plt.xlabel('Tree density')
+    plt.ylabel('Percolating percentage')
+    plt.title('Percolating percentage based on tree density')
+    plt.show()
