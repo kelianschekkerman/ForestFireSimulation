@@ -168,14 +168,15 @@ def step(lattice, wind_probabilities):
     for site in to_burn:
         i, j = site
         lattice[i, j] = 2
-    if len(to_burn) == 0 or is_spanning(lattice):
+    if len(to_burn) == 0:
         return False
     else:
         return True
-
-# Return true if the lattice contains a spanning cluster.
-def is_spanning(lattice):
-    if np.any(lattice[-1, :] == 4):
+    
+# Return if the perculation hit one of the sides of the square lattice
+def is_percolating(lattice):
+    n = lattice.shape[0]
+    if np.any(lattice[0, :] == 3) or np.any(lattice[:, 0] == 3) or np.any(lattice[-1, :] == 3) or np.any(lattice[:, -1] == 3):
         return True
     else:
         return False
@@ -191,31 +192,41 @@ if __name__ == "__main__":
     elif args.weather == 'wet':
         weather = 0.5
 
-    burnt_percentage = []
-
-    # TODO: Add a loop for multiple iterations to normalise the results
-    images = []
-    fig = plt.figure(figsize=(6, 6))
-
-    # Create a square lattice of size n x n with tree density p
-    grid = init_square_lattice(args.size, args.treeprobability, args.distribution)
-
-    images.append(return_image(grid))
-    random_arson(grid, args.center)
-    images.append(return_image(grid))
-
     # Get the probabilities of the neighbours catching fire based on the wind direction, wind speed and weather
     wind_probabilities = get_wind_probabilities(args.windspeed, args.winddirection, weather)
 
-    # Run the simulation and save the images for the animation
-    while step(grid, wind_probabilities):
-        images.append(return_image(grid))
-    ani = animation.ArtistAnimation(fig, images, interval=100, blit=True, repeat_delay=10000)
-    ani.save(f'gifs\{args.size}_{args.treeprobability}_{args.distribution}_{args.windspeed}_{args.winddirection}_{args.weather}_{args.center}.gif', dpi=80, writer='pillow') 
+    burnt_percentage = []
+    percolating_percentage = []
 
-    # plt.show() # Uncomment to show the animation
-    # TODO: calculate the percentage of trees burned down from the total number of trees
-    # amount of pixels in the lattice
-    amount_of_trees = len(np.argwhere(grid == 1))
-    amount_of_trees_burnt = len(np.argwhere(grid == 3))
-    print(amount_of_trees, amount_of_trees_burnt)
+    # TODO: Add a loop for multiple iterations to normalise the results
+    for i in range(10):
+        images = []
+        fig = plt.figure(figsize=(6, 6))
+        percolating = False
+
+        # Create a square lattice of size n x n with tree density p
+        grid = init_square_lattice(args.size, args.treeprobability, args.distribution)
+
+        amount_of_trees = len(np.argwhere(grid == 1))
+
+        images.append(return_image(grid))
+        random_arson(grid, args.center)
+        images.append(return_image(grid))
+        
+
+        # Run the simulation and save the images for the animation
+        while step(grid, wind_probabilities):
+            images.append(return_image(grid))
+        ani = animation.ArtistAnimation(fig, images, interval=100, blit=True, repeat_delay=10000)
+        ani.save(f'gifs\{args.size}_{args.treeprobability}_{args.distribution}_{args.windspeed}_{args.winddirection}_{args.weather}_{args.center}_{i}.gif', dpi=80, writer='pillow') 
+
+        # plt.show() # Uncomment to show the animation
+        amount_of_trees_burnt = len(np.argwhere(grid == 3)) + len(np.argwhere(grid == 2))
+        # print(amount_of_trees, amount_of_trees_burnt)
+
+        burnt_percentage.append(amount_of_trees_burnt / amount_of_trees)
+        percolating = is_percolating(grid)
+        percolating_percentage.append(percolating)
+
+    print(burnt_percentage)
+    print(percolating_percentage)
