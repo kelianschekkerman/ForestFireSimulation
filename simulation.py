@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import matplotlib.animation as animation
 from tqdm import tqdm
+from scipy.optimize import curve_fit
 
 # Take the arguments from the command line and return them
 # TODO: add a catch for invalid arguments
@@ -181,6 +182,9 @@ def is_percolating(lattice):
     else:
         return False
     
+# Define the sigmoid function to fit the data points
+def sigmoid(x, max_val, x0, steepness, y_intercept):
+    return max_val / (1 + np.exp(-steepness * (x - x0))) + y_intercept
 
 if __name__ == "__main__":
     args = create_arg_parser()
@@ -198,10 +202,17 @@ if __name__ == "__main__":
     burnt_percentage = []
     percolating_percentage = []
     percolating_amount = 0
-    treeprobability = 0.01
 
-    for i in tqdm(range(99)):
-        for j in range(10):
+    ### Change these to adjust iterations ###
+    max_iter = 1000
+    max_subiter = 20
+    #########################################
+
+    probability_step = 1.00000/max_iter
+    treeprobability = probability_step
+
+    for i in tqdm(range(max_iter - 1)): # probability does not start at 0, so we need max_iter - 1 steps
+        for j in range(max_subiter):
             images = []
             # fig = plt.figure(figsize=(6, 6))
             percolating = False
@@ -215,7 +226,6 @@ if __name__ == "__main__":
             random_arson(grid, args.center)
             # images.append(return_image(grid))
             
-
             # Run the simulation and save the images for the animation
             while step(grid, wind_probabilities):
                 pass
@@ -231,15 +241,33 @@ if __name__ == "__main__":
             percolating = is_percolating(grid)
             percolating_amount += 1 if percolating else 0
 
-        percolating_percentage.append(percolating_amount / 10)
+        percolating_percentage.append(percolating_amount / max_subiter)
         percolating_amount = 0
-        treeprobability += 0.01
+        treeprobability += probability_step
     
-    x_values = [i / 99 for i in range(len(percolating_percentage))]
-    y_values = percolating_percentage
+    # Define the x and y values of the data and save in numpy arrays
+    x_values = np.array([i / len(percolating_percentage) for i in range(len(percolating_percentage))])
+    y_values = np.array(percolating_percentage)
 
-    plt.scatter(x_values, y_values)
+    # Fit the sigmoid curve to find the optimal values for our data
+    opt_val, _ = curve_fit(sigmoid, x_values, y_values, maxfev=10000)
+
+    # Extract the percolation threshold (x0 parameter in the sigmoid function)
+    percolation_threshold = opt_val[1]
+
+    # Calculate smooth x-values for the sigmoid curve
+    x_smooth = np.linspace(min(x_values), max(x_values), 500)
+    y_smooth = sigmoid(x_smooth, *opt_val)
+
+    # Plot the original data and the fitted sigmoid curve
+    plt.scatter(x_values, y_values, color='c', label="Data points")
+    plt.plot(x_smooth, y_smooth, color='b', label="Sigmoid fit")
+
+    # Add a vertical line for the percolation threshold
+    plt.axvline(x=percolation_threshold, color='g', linestyle='--', label=f'Percolation threshold ≈ {percolation_threshold:.3f}')
+
     plt.xlabel('Tree density')
     plt.ylabel('Percolating percentage')
     plt.title('Percolating percentage based on tree density')
+    plt.legend()
     plt.show()
