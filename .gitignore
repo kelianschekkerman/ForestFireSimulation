@@ -1,2 +1,3 @@
-# Ignore all generated gifs
+# Ignore all generated gifs and figures
 *.gif
+*.png
