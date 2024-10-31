@@ -23,14 +23,14 @@ def create_arg_parser():
     parser.add_argument("-s", "--size", default=100, type=int,
                         help="The size of the square lattice. Default is 100.")
     parser.add_argument("-ws", "--windspeed", default=0.1, type=float,
-                        help="The speed of the wind. Default is 0.0, thus no wind. Can range from 0.0 to 0.39.")
+                        help="The speed of the wind. Default is 0.0, thus no wind. Can range from 0.0 to 0.3.")
     parser.add_argument("-wd", "--winddirection", default=None, type=str,
                         help="Direction of the wind. Options are: N, S, E, W, NE, NW, SE, SW. Default is no wind.")
     parser.add_argument("-w", "--weather", default='normal', type=str,
                         help="The weather conditions. Options are: dry, normal, wet. Default is normal.")
     parser.add_argument("-c", "--center", default='center', type=str,
                         help="Starting point of the fire in the lattice. Options are: center and random. Default is center.")
-    parser.add_argument("-a", "--animation", default='graph', type=str,
+    parser.add_argument("-a", "--animation", default='animation', type=str,
                         help="Type of output. Options are: graph and animation. Default is graph.")
     args = parser.parse_args() 
     return args
@@ -38,11 +38,11 @@ def create_arg_parser():
 # Return the values of the weather conditions
 def get_weather_values(weather):
     if weather == 'dry':
-        return 0.5
+        return 1.25
     elif weather == 'normal':
         return 1
     elif weather == 'wet':
-        return 1.5
+        return 0.75
 
 # Return the probabilities of neigbours catching fire based on the wind direction and wind speed
 def get_wind_probabilities(args):   
@@ -52,9 +52,7 @@ def get_wind_probabilities(args):
 
     if wind_direction == None:
         probabilties = [1, 1, 1, 1] # f.l.t.r. top, right, bottom, left
-        ws = [wind_speed, wind_speed, wind_speed, wind_speed]
-        weather_probabilities = [x * weather for x in probabilties]
-        return [sum(x) for x in zip(ws, weather_probabilities)]
+        return [x * weather for x in probabilties]
     elif wind_direction == 'N':
         probabilties = [0.25, 0.75, 1, 0.75]
         ws = [-wind_speed, wind_speed, wind_speed, wind_speed]
@@ -74,24 +72,25 @@ def get_wind_probabilities(args):
         probabilties = [0.75, 1, 0.75, 0.25]
         ws = [wind_speed, wind_speed, wind_speed, -wind_speed]
         weather_probabilities = [x * weather for x in probabilties]
+        return [sum(x) for x in zip(ws, weather_probabilities)]
     elif wind_direction == 'NE':
         probabilties = [0.5, 0.5, 1, 1]
-        ws = [-0.5 * wind_speed, -0.5 * wind_speed, 0.5 * wind_speed, 0.5 * wind_speed]
+        ws = [-wind_speed, -wind_speed, wind_speed, wind_speed]
         weather_probabilities = [x * weather for x in probabilties]
         return [sum(x) for x in zip(ws, weather_probabilities)]
     elif wind_direction == 'NW':
         probabilties = [0.5, 1, 1, 0.5]
-        ws = [-0.5 * wind_speed, 0.5 * wind_speed, 0.5 * wind_speed, -0.5 * wind_speed]
+        ws = [-wind_speed, wind_speed, wind_speed, -wind_speed]
         weather_probabilities = [x * weather for x in probabilties]
         return [sum(x) for x in zip(ws, weather_probabilities)]
     elif wind_direction == 'SE':
         probabilties = [1, 0.5, 0.5, 1]
-        ws = [0.5 * wind_speed, -0.5 * wind_speed, -0.5 * wind_speed, 0.5 * wind_speed]
+        ws = [wind_speed, -wind_speed, -wind_speed, wind_speed]
         weather_probabilities = [x * weather for x in probabilties]
         return [sum(x) for x in zip(ws, weather_probabilities)]
     elif wind_direction == 'SW':
         probabilties = [1, 1, 0.5, 0.5]
-        ws = [0.5 * wind_speed, 0.5 * wind_speed, -0.5 * wind_speed, -0.5 * wind_speed]
+        ws = [wind_speed, wind_speed, -wind_speed, -wind_speed]
         weather_probabilities = [x * weather for x in probabilties]
         return [sum(x) for x in zip(ws, weather_probabilities)]
 
@@ -244,7 +243,7 @@ def sigmoid(x, max_val, x0, steepness, y_intercept, ):
     return max_val / (1 + np.exp(-steepness * (x - x0))) + y_intercept
 
 # Create a graph with the data points and the fitted sigmoid curve
-def create_graph(values, ylabel, title, threshold, args):
+def add_to_graph(values, threshold, variable, color):
 
     # Define the x and y values of the data and save in numpy arrays
     x_values = np.array([i / len(values) for i in range(len(values))])
@@ -261,21 +260,21 @@ def create_graph(values, ylabel, title, threshold, args):
     y_smooth = sigmoid(x_smooth, *opt_val)
 
     # Plot the original data and the fitted sigmoid curve
-    plt.scatter(x_values, y_values, color='c', label="Data points")
-    plt.plot(x_smooth, y_smooth, color='b', label="Sigmoid fit")
+    # plt.scatter(x_values, y_values, s=30, c=color)
+    plt.plot(x_smooth, y_smooth, c=color, label=f"{variable}")
 
     if threshold:
         # Add a vertical line for the percolation threshold
-        plt.axvline(x=percolation_threshold, color='g', linestyle='--', label=f'Percolation threshold ≈ {percolation_threshold:.3f}')
-        sub_title = 'percolation'
-    else:
-        sub_title = 'burnt_trees'
-
+        plt.axvline(x=percolation_threshold, linestyle='--', c=color, label=f'Percolation threshold ≈ {percolation_threshold:.3f}')
+    
+# Save the graph
+def save_graph(ylabel, title, sub_title, setting):
     plt.xlabel('Tree density')
     plt.ylabel(ylabel)
     plt.title(title)
-    plt.legend()
-    plt.savefig(f'figures/{sub_title}_{args.winddirection}_{args.weather}_{args.windspeed}_{args.center}.png')
+    plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
+    plt.tight_layout()
+    plt.savefig(f'figures/{sub_title}_{setting}.png')
     plt.close()
 
 
@@ -283,46 +282,95 @@ def create_graph(values, ylabel, title, threshold, args):
 if __name__ == "__main__":
     args = create_arg_parser()
 
-    burnt_percentage = []
-    percolating_percentage = []
-    percolating_amount = 0
-    burnt_trees_amount = 0
+    # Overview of all possible variables for the simulation
+    wind_directions = [None, 'N', 'S', 'E', 'W', 'NE', 'NW', 'SE', 'SW']
+    wind_speeds = [0.1, 0.2, 0.3]
+    weather_conditions = ['dry', 'normal', 'wet']
+    location = ['center', 'random']
+    
+    settings = [weather_conditions, wind_directions, wind_speeds, location]
+
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'purple']
 
     # Get the probabilities of the neighbours catching fire based on the wind direction, wind speed and weather
     wind_probabilities = get_wind_probabilities(args)
+    np.clip(wind_probabilities, 0, 1)
 
     probability_step = 1.00000/max_iter
-    treeprobability = probability_step
 
     # Just create a single animation if specified in the arguments
     if args.animation == 'animation':
         run_single_animation(wind_probabilities, args)
         exit()
 
-    for i in tqdm(range(max_iter - 1)): # probability does not start at 0, so we need max_iter - 1 steps
-        for j in range(max_subiter):
-            percolating = False
+    for setting in tqdm(settings):
+        plt.figure(figsize=(12,6))
 
-            # Create a square lattice of size n x n with tree density p
-            grid = init_square_lattice(args, treeprobability)
-            amount_of_trees = len(np.flatnonzero(grid == 1))
-            arson(grid, args.center)
-            
-            # Run the simulation and save the images for the animation
-            while step(grid, wind_probabilities):
-                pass
+        # Reset the variables to the default values
+        if setting == wind_directions:
+            args.windspeed = 0.1
+            args.weather = 'normal'
+            args.center = 'center'
+        elif setting == wind_speeds:
+            args.winddirection = None
+            args.weather = 'normal'
+            args.center = 'center'
+        elif setting == weather_conditions:
+            args.winddirection = None
+            args.windspeed = 0.1
+            args.center = 'center'
+        elif setting == location:
+            args.winddirection = None
+            args.windspeed = 0.1
+            args.weather = 'normal'
 
-            amount_of_trees_burnt = len(np.flatnonzero(grid == 3)) + len(np.flatnonzero(grid == 2))
-            percolating = is_percolating(grid)
-            percolating_amount += 1 if percolating else 0
-            burnt_trees_amount += (amount_of_trees_burnt / amount_of_trees)
+        for variable in tqdm(setting):
 
-        burnt_percentage.append(burnt_trees_amount / max_subiter)
-        percolating_percentage.append(percolating_amount / max_subiter)
-        percolating_amount = 0
-        burnt_trees_amount = 0
-        treeprobability += probability_step
-    
-    # Create the graphs for the percolating and burnt trees percentage
-    create_graph(percolating_percentage, 'Percolating percentage', 'Percolating percentage based on tree density', True, args)
-    create_graph(burnt_percentage, 'Burnt trees percentage', 'Burnt trees percentage based on tree density', False, args)
+            if setting == wind_directions:
+                args.winddirection = variable
+                wind_probabilities = get_wind_probabilities(args)
+            elif setting == wind_speeds:
+                args.windspeed = variable
+                wind_probabilities = get_wind_probabilities(args)
+            elif setting == weather_conditions:
+                args.weather = variable
+                wind_probabilities = get_wind_probabilities(args)
+            elif setting == location:
+                args.center = variable
+
+            treeprobability = probability_step
+            burnt_percentage = []
+            percolating_percentage = []
+            percolating_amount = 0
+            burnt_trees_amount = 0
+
+            for i in tqdm(range(max_iter - 1)): # probability does not start at 0, so we need max_iter - 1 steps
+                for j in range(max_subiter):
+                    percolating = False
+
+                    # Create a square lattice of size n x n with tree density p
+                    grid = init_square_lattice(args, treeprobability)
+                    amount_of_trees = len(np.flatnonzero(grid == 1))
+                    arson(grid, args.center)
+                    
+                    # Run the simulation and save the images for the animation
+                    while step(grid, wind_probabilities):
+                        pass
+
+                    amount_of_trees_burnt = len(np.flatnonzero(grid == 3)) + len(np.flatnonzero(grid == 2))
+                    percolating = is_percolating(grid)
+                    percolating_amount += 1 if percolating else 0
+                    burnt_trees_amount += (amount_of_trees_burnt / amount_of_trees)
+
+                burnt_percentage.append(burnt_trees_amount / max_subiter)
+                percolating_percentage.append(percolating_amount / max_subiter)
+                percolating_amount = 0
+                burnt_trees_amount = 0
+                treeprobability += probability_step
+        
+            # Create the graphs for the percolating and burnt trees percentage
+            add_to_graph(percolating_percentage, True, variable, colors[setting.index(variable)])
+            # add_to_graph(burnt_percentage, False, variable)
+
+        save_graph('Percolating percentage', 'Percolating percentage based on tree density', 'p', setting)
+        # save_graph('Burnt trees percentage', 'Burnt trees percentage based on tree density', 'b', setting)
