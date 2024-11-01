@@ -124,7 +124,6 @@ def run_single_simulation(wind_probabilities, args):
     ani = animation.ArtistAnimation(fig, images, interval=100, blit=True, repeat_delay=10000)
     ani.save(f'gifs\{args.size}_{args.treeprobability}_{args.distribution}_{args.windspeed}_{args.winddirection}_{args.weather}_{args.center}.gif', dpi=80, writer='pillow') 
     plt.close(fig)
-    # TODO: add variables in the gif next to just the file name
 
 # Run a single animation based on the given arguments
 def run_simulation(args, wind_probabilities, treeprobability):
@@ -255,8 +254,8 @@ def add_to_graph(values, threshold, variable, color):
     y_smooth = sigmoid(x_smooth, *opt_val)
 
     # Plot the original data and the fitted sigmoid curve
-    # plt.scatter(x_values, y_values, s=30, c=color)
     plt.plot(x_smooth, y_smooth, c=color, label=f"{variable}")
+    # plt.scatter(x_values, y_values, s=20, c=color) # Uncomment to show data points
 
     if threshold:
         # Add a vertical line for the percolation threshold
@@ -266,7 +265,7 @@ def add_to_graph(values, threshold, variable, color):
 def save_graph(ylabel, title, sub_title, setting):
     plt.xlabel('Tree density')
     plt.ylabel(ylabel)
-    plt.title(title)
+    plt.title(title + f' and {setting}')
     plt.legend(bbox_to_anchor=(1.05, 1.0), loc='upper left')
     plt.tight_layout()
     plt.savefig(f'figures/{sub_title}_{setting}.png')
@@ -322,16 +321,16 @@ if __name__ == "__main__":
 
     # Loop through all settings and variables to generate graphs
     for setting in tqdm(settings):
+        burnt_percentages = []
+        percolating_percentages = []
         setting_name = "wind_directions" if setting == wind_directions else \
                        "wind_speeds" if setting == wind_speeds else \
                        "weather_conditions" if setting == weather_conditions else \
                        "location"
-        
-        plt.figure(figsize=(12, 6))
         reset_defaults(setting_name)
 
         # Loop through all variables for the given setting
-        for idx, variable in enumerate(tqdm(setting)):
+        for variable in tqdm(setting):
             wind_probabilities = update_args_for_variable(setting_name, variable)
             treeprobability = probability_step
             burnt_percentage = []
@@ -344,10 +343,16 @@ if __name__ == "__main__":
                 percolating_percentage.append(percolating_amount / max_subiter)
                 treeprobability += probability_step
 
-            # Generate graphs
-            add_to_graph(percolating_percentage, True, variable, colors[idx])
-            # add_to_graph(burnt_percentage, False, variable)
+            percolating_percentages.append(percolating_percentage)
+            burnt_percentages.append(burnt_percentage)
 
-        # Save graph for this setting
-        save_graph('Percolating percentage', 'Percolating percentage based on tree density', 'p', setting)
-        # save_graph('Burnt trees percentage', 'Burnt trees percentage based on tree density', 'b', setting)
+        # Generate graphs
+        plt.figure(figsize=(12, 6))
+        for idx, percolating_percentage in enumerate(percolating_percentages):
+            add_to_graph(percolating_percentage, True, setting[idx], colors[idx])
+        save_graph('Percolating percentage', 'Percolating percentage based on tree density', 'p', setting_name)
+
+        plt.figure(figsize=(12, 6))
+        for idx, burnt_percentage in enumerate(burnt_percentages):
+            add_to_graph(burnt_percentage, False, setting[idx], colors[idx])
+        save_graph('Burnt trees percentage', 'Burnt trees percentage based on tree density', 'b', setting_name)
