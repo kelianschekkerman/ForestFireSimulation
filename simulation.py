@@ -64,17 +64,23 @@ def get_wind_probabilities(args):
     
     # Retrieve probabilities and wind adjustments for the given direction
     if wind_speed == 0.0:
-        probabilities, ws = direction_map.get(None)
+        probabilities, ws = direction_map.get(None) # If there is no wind, there should be no wind adjustments
     else:
         probabilities, ws = direction_map.get(args.winddirection)
     # Adjust probabilities by weather and add wind effects
     weather_probabilities = [p * weather for p in probabilities]
     return [sum(x) for x in zip(ws, weather_probabilities)]
 
-# Map a value from one range to another
-def map_value(x, old_min=0, old_max=1, new_min=2, new_max=50):
-    mapped_value = new_min - ((x - old_min) / (old_max - old_min)) * (new_max - new_min)
-    return int(mapped_value)
+# Map a value from one range to another range
+def map_value(x, old_min, old_max, new_min, new_max, sign):
+    # If sign is True, the value is mapped from the old range to the new range normally
+    if sign:
+        mapped_value = new_min + (x - old_min) * (new_max - new_min) / (old_max - old_min)
+
+    # If sign is False, the value is mapped from the old range to the new range in reverse
+    else:
+        mapped_value = new_max - ((x - old_min) / (old_max - old_min)) * (new_max - new_min) 
+    return mapped_value
 
 # Initialize the square lattice with trees based on the distribution type
 def init_square_lattice(args, p):
@@ -85,12 +91,12 @@ def init_square_lattice(args, p):
     if type == 'random': 
         lattice = np.random.choice([0, 1], size=(n, n), p=[1-p, p])
 
-    # ordered lines on the lattice
+    # ordered lines on the lattice (man-made forest)
     elif type == 'ordered': 
-        d = map_value(p) # distance between lines based on tree density
-        if d < 2:
-            d = 2 # slightly hardcoded to prevent division by zero
-        
+        d = map_value(p, 0, 1, 1, 30, False) # distance between lines based on tree density
+        d = int(d)
+        if d < 1:
+            d = 1                            # slightly hardcoded to prevent division by zero
         lattice = np.zeros((n, n))
         for i in range(n):
             if i % d == 0:
@@ -102,13 +108,15 @@ def init_square_lattice(args, p):
     # random tree distribution based on perlin noise
     elif type == 'semi-random': 
         lattice = np.zeros((n, n))
-        scale = 1.9 
+        d = map_value(p, 0, 1, 0.2, 0.7, True) # tweaked the values to get a more realistic distribution compared to the other distributions
+        if d < 0.2:
+            d = 0.2                            # slightly hardcoded to prevent division by zero
+        scale = 2
         for i in range(n):
             for j in range(n):
                  noise_value = pnoise2(i / scale, j / scale)
                  normalized_value = (noise_value + 1) / 2
-                 lattice[i, j] = 1 if normalized_value < p else 0
-
+                 lattice[i, j] = 1 if normalized_value < d else 0
     return lattice
 
 # Return a single image used in a matplotlib animation
@@ -135,11 +143,7 @@ def run_single_simulation(wind_probabilities, args):
     while step(grid, wind_probabilities):
         images.append(return_image(grid))
     ani = animation.ArtistAnimation(fig, images, interval=100, blit=True, repeat_delay=10000)
-
-    if args.distribution == 'random':
-        ani.save(f'gifs\{args.size}_{args.distribution}_{args.treeprobability}_{args.winddirection}_{args.windspeed}_{args.weather}_{args.center}.gif', dpi=80, writer='pillow') 
-    else:
-        ani.save(f'gifs\{args.size}_{args.distribution}_{args.winddirection}_{args.windspeed}_{args.weather}_{args.center}.gif', dpi=80, writer='pillow')
+    ani.save(f'gifs\{args.size}_{args.distribution}_{args.treeprobability}_{args.winddirection}_{args.windspeed}_{args.weather}_{args.center}.gif', dpi=80, writer='pillow')
     plt.close(fig)
 
 # Run a single animation based on the given arguments
@@ -316,7 +320,7 @@ if __name__ == "__main__":
     wind_speeds = [0.0, 0.1, 0.2, 0.3]
     weather_conditions = ['dry', 'normal', 'wet']
     location = ['center', 'random']
-    distributions = ['random', 'ordered']
+    distributions = ['random', 'semi-random', 'ordered']
     probability_step = 1.00000/max_iter
 
     settings = [wind_speeds, wind_directions, weather_conditions, location]
@@ -369,8 +373,15 @@ if __name__ == "__main__":
                 percolating_percentages.append(percolating_percentage)
                 burnt_percentages.append(burnt_percentage)
 
+            # Generate only the burnt trees graph
+            if distribution == 'ordered':
+                plt.figure(figsize=(12, 6))
+                for idx, burnt_percentage in enumerate(burnt_percentages):
+                    add_to_graph(burnt_percentage, True, False, setting[idx], colors[idx]) # scatter plot
+                save_graph('Burnt trees percentage', 'Burnt trees percentage based on tree density', 'b', setting_name, distribution)
+
             # Generate both the percolating and burnt trees graphs
-            if distribution == 'random':
+            else:
                 plt.figure(figsize=(12, 6))
                 for idx, percolating_percentage in enumerate(percolating_percentages):
                     add_to_graph(percolating_percentage, False, True, setting[idx], colors[idx])
@@ -379,11 +390,4 @@ if __name__ == "__main__":
                 plt.figure(figsize=(12, 6))
                 for idx, burnt_percentage in enumerate(burnt_percentages):
                     add_to_graph(burnt_percentage, False, False, setting[idx], colors[idx])
-                save_graph('Burnt trees percentage', 'Burnt trees percentage based on tree density', 'b', setting_name, distribution)
-
-            # Generate only the burnt trees graph
-            else:
-                plt.figure(figsize=(12, 6))
-                for idx, burnt_percentage in enumerate(burnt_percentages):
-                    add_to_graph(burnt_percentage, True, False, setting[idx], colors[idx])
                 save_graph('Burnt trees percentage', 'Burnt trees percentage based on tree density', 'b', setting_name, distribution)
