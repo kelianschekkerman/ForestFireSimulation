@@ -6,6 +6,7 @@ This project simulates the spread of a forest fire using a simple model. The sim
 
 - Simulates forest fire spread over a grid.
 - Configurable parameters for tree density, forest type, and grid size.
+- Create graphs for percolation percentage and burnt tree percentage
 
 ## Requirements
 
@@ -22,13 +23,10 @@ Run the simulation with default parameters:
 python simulation.py
 ```
 
-There are several imput parameters. These parameters are optional, you can find the parameters by running:
+There are several input parameters. These parameters are optional, you can find the parameters by running:
 ```sh
 python simulation.py -h
 ```
-
-## Project status
-In this version of the code, we have implemented a grid representing a forest. Trees can be placed in this forest using different distributions. We have also implemented a starting point for the fire, this point is chosen randomly from all cells representing a tree. Our next step will be adding the spreading of fire to neighbouring trees. After that, we will focus on simulating the wind direction.
 
 ## Acknowledgements
 
