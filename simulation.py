@@ -17,7 +17,7 @@ max_subiter = 5
 def create_arg_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--animation", default='animation', type=str,
-                        help="Type of output. Options are: graph and animation. Default is graph.")
+                        help="Type of output. Options are: graph and animation. Default is animation.")
     parser.add_argument("-s", "--size", default=100, type=int,
                         help="The size of the square lattice. Default is 100.")
     parser.add_argument("-d", "--distribution", default='random', type=str,
